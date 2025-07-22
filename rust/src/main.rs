@@ -86,8 +86,13 @@ fn main() -> bitcoincore_rpc::Result<()> {
     // Generate one address from the Miner wallet with label "Mining Reward"
     let mining_address_unchecked = miner_rpc.get_new_address(Some("Mining Reward"), None)?;
     // Validate the address for regtest network
-    let mining_address = mining_address_unchecked.require_network(Network::Regtest)
-        .map_err(|e| bitcoincore_rpc::Error::JsonRpc(bitcoincore_rpc::jsonrpc::Error::Transport(format!("Address validation error: {}", e).into())))?;
+    let mining_address = mining_address_unchecked
+        .require_network(Network::Regtest)
+        .map_err(|e| {
+            bitcoincore_rpc::Error::JsonRpc(bitcoincore_rpc::jsonrpc::Error::Transport(
+                format!("Address validation error: {}", e).into(),
+            ))
+        })?;
     println!("Mining address: {}", mining_address);
 
     // Mine blocks until we get spendable balance
@@ -116,7 +121,10 @@ fn main() -> bitcoincore_rpc::Result<()> {
 
     // Print the balance of the Miner wallet
     let final_miner_balance = miner_rpc.get_balance(None, None)?;
-    println!("Final Miner wallet balance: {} BTC", final_miner_balance.to_btc());
+    println!(
+        "Final Miner wallet balance: {} BTC",
+        final_miner_balance.to_btc()
+    );
 
     /*
     Comment on wallet balance behavior:
@@ -129,8 +137,13 @@ fn main() -> bitcoincore_rpc::Result<()> {
     // Create receiving address from Trader wallet with label "Received"
     let trader_address_unchecked = trader_rpc.get_new_address(Some("Received"), None)?;
     // Validate the address for regtest network
-    let trader_address = trader_address_unchecked.require_network(Network::Regtest)
-        .map_err(|e| bitcoincore_rpc::Error::JsonRpc(bitcoincore_rpc::jsonrpc::Error::Transport(format!("Address validation error: {}", e).into())))?;
+    let trader_address = trader_address_unchecked
+        .require_network(Network::Regtest)
+        .map_err(|e| {
+            bitcoincore_rpc::Error::JsonRpc(bitcoincore_rpc::jsonrpc::Error::Transport(
+                format!("Address validation error: {}", e).into(),
+            ))
+        })?;
     println!("Trader receiving address: {}", trader_address);
 
     // Send 20 BTC from Miner to Trader
@@ -149,13 +162,20 @@ fn main() -> bitcoincore_rpc::Result<()> {
     println!("Transaction sent with ID: {}", txid);
 
     // Fetch the unconfirmed transaction from mempool
-    let mempool_entry = rpc.call::<serde_json::Value>("getmempoolentry", &[json!(txid.to_string())])?;
-    println!("Mempool entry: {}", serde_json::to_string_pretty(&mempool_entry)?);
+    let mempool_entry =
+        rpc.call::<serde_json::Value>("getmempoolentry", &[json!(txid.to_string())])?;
+    println!(
+        "Mempool entry: {}",
+        serde_json::to_string_pretty(&mempool_entry)?
+    );
 
     // Mine 1 block to confirm the transaction
     let confirmation_blocks = rpc.generate_to_address(1, &mining_address)?;
     let confirmation_block_hash = confirmation_blocks[0];
-    println!("Transaction confirmed in block: {}", confirmation_block_hash);
+    println!(
+        "Transaction confirmed in block: {}",
+        confirmation_block_hash
+    );
 
     // Extract transaction details
     let raw_tx_info = rpc.get_raw_transaction_info(&txid, Some(&confirmation_block_hash))?;
@@ -172,12 +192,18 @@ fn main() -> bitcoincore_rpc::Result<()> {
     let input_output = &prev_tx_info.vout[input_vout as usize];
     let miner_input_amount_sats = input_output.value.to_sat();
     let miner_input_amount = input_output.value.to_btc();
-    let miner_input_address = input_output.script_pub_key.address
+    let miner_input_address = input_output
+        .script_pub_key
+        .address
         .as_ref()
         .unwrap()
         .clone()
         .require_network(Network::Regtest)
-        .map_err(|e| bitcoincore_rpc::Error::JsonRpc(bitcoincore_rpc::jsonrpc::Error::Transport(format!("Address validation error: {}", e).into())))?
+        .map_err(|e| {
+            bitcoincore_rpc::Error::JsonRpc(bitcoincore_rpc::jsonrpc::Error::Transport(
+                format!("Address validation error: {}", e).into(),
+            ))
+        })?
         .to_string();
 
     // Extract output details
@@ -190,8 +216,14 @@ fn main() -> bitcoincore_rpc::Result<()> {
 
     for output in &raw_tx_info.vout {
         if let Some(ref address) = output.script_pub_key.address {
-            let addr_str = address.clone().require_network(Network::Regtest)
-                .map_err(|e| bitcoincore_rpc::Error::JsonRpc(bitcoincore_rpc::jsonrpc::Error::Transport(format!("Address validation error: {}", e).into())))?
+            let addr_str = address
+                .clone()
+                .require_network(Network::Regtest)
+                .map_err(|e| {
+                    bitcoincore_rpc::Error::JsonRpc(bitcoincore_rpc::jsonrpc::Error::Transport(
+                        format!("Address validation error: {}", e).into(),
+                    ))
+                })?
                 .to_string();
             let amount = output.value.to_btc();
             let amount_sats = output.value.to_sat();
@@ -211,7 +243,8 @@ fn main() -> bitcoincore_rpc::Result<()> {
     }
 
     // Calculate transaction fees using satoshis for precision
-    let transaction_fees_sats = miner_input_amount_sats - trader_output_amount_sats - miner_change_amount_sats;
+    let transaction_fees_sats =
+        miner_input_amount_sats - trader_output_amount_sats - miner_change_amount_sats;
     let transaction_fees = Amount::from_sat(transaction_fees_sats).to_btc();
 
     // Write data to ../out.txt

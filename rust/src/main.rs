@@ -1,4 +1,5 @@
 #![allow(unused)]
+#![allow(clippy::uninlined_format_args)]
 use bitcoin::hex::DisplayHex;
 use bitcoincore_rpc::bitcoin::{Amount, Network};
 use bitcoincore_rpc::{Auth, Client, RpcApi};
